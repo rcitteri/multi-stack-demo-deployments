@@ -157,3 +157,6 @@ __pycache__/
 
 # Claude Code
 .claude/
+
+# Presentation
+presentation/
