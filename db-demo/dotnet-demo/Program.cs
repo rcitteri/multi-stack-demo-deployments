@@ -87,8 +87,7 @@ static (string connectionString, string dbType) GetDatabaseConnectionString(ICon
                 var password = credentials.GetProperty("password").GetString();
 
                 Console.WriteLine("Using MySQL database from VCAP_SERVICES");
-                var connString = $"Server={host};Port={port};Database={database};User={username};Password={password};SslMode=Required;";
-                return (connString, "mysql");
+                return ($"Server={host};Port={port};Database={database};User={username};Password={password};SslMode=Required;", "mysql");
             }
             // Check for PostgreSQL
             else if (services.RootElement.TryGetProperty("postgres", out var postgresServices))
@@ -103,8 +102,7 @@ static (string connectionString, string dbType) GetDatabaseConnectionString(ICon
                 var password = credentials.GetProperty("password").GetString();
 
                 Console.WriteLine("Using PostgreSQL database from VCAP_SERVICES");
-                var connString = $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true";
-                return (connString, "postgres");
+                return ($"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true", "postgres");
             }
         }
         catch (Exception ex)
