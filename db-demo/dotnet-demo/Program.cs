@@ -24,9 +24,21 @@ builder.Services.AddSingleton<AppConfig>(sp =>
 });
 
 // Configure database
-var connectionString = GetDatabaseConnectionString(builder.Configuration);
+var (connectionString, dbType) = GetDatabaseConnectionString(builder.Configuration);
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+{
+    if (dbType == "mysql")
+    {
+        var serverVersion = new MySqlServerVersion(new Version(8, 0, 21));
+        options.UseMySql(connectionString, serverVersion);
+        Console.WriteLine("Using MySQL database provider");
+    }
+    else
+    {
+        options.UseNpgsql(connectionString);
+        Console.WriteLine("Using PostgreSQL database provider");
+    }
+});
 
 // Add health checks
 builder.Services.AddHealthChecks();
@@ -52,7 +64,7 @@ app.MapFallbackToFile("index.html");
 
 app.Run();
 
-static string GetDatabaseConnectionString(IConfiguration configuration)
+static (string connectionString, string dbType) GetDatabaseConnectionString(IConfiguration configuration)
 {
     // Check for Cloud Foundry VCAP_SERVICES
     var vcapServices = Environment.GetEnvironmentVariable("VCAP_SERVICES");
@@ -61,17 +73,39 @@ static string GetDatabaseConnectionString(IConfiguration configuration)
         try
         {
             var services = System.Text.Json.JsonDocument.Parse(vcapServices);
-            var postgres = services.RootElement.GetProperty("postgres")[0];
-            var credentials = postgres.GetProperty("credentials");
 
-            var host = credentials.GetProperty("host").GetString();
-            var port = credentials.GetProperty("port").GetInt32();
-            var database = credentials.GetProperty("database").GetString();
-            var username = credentials.GetProperty("username").GetString();
-            var password = credentials.GetProperty("password").GetString();
+            // Check for MySQL first
+            if (services.RootElement.TryGetProperty("mysql", out var mysqlServices))
+            {
+                var mysql = mysqlServices[0];
+                var credentials = mysql.GetProperty("credentials");
 
-            Console.WriteLine("Using database from VCAP_SERVICES");
-            return $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true";
+                var host = credentials.GetProperty("host").GetString();
+                var port = credentials.GetProperty("port").GetInt32();
+                var database = credentials.GetProperty("database").GetString();
+                var username = credentials.GetProperty("username").GetString();
+                var password = credentials.GetProperty("password").GetString();
+
+                Console.WriteLine("Using MySQL database from VCAP_SERVICES");
+                var connString = $"Server={host};Port={port};Database={database};User={username};Password={password};SslMode=Required;";
+                return (connString, "mysql");
+            }
+            // Check for PostgreSQL
+            else if (services.RootElement.TryGetProperty("postgres", out var postgresServices))
+            {
+                var postgres = postgresServices[0];
+                var credentials = postgres.GetProperty("credentials");
+
+                var host = credentials.GetProperty("host").GetString();
+                var port = credentials.GetProperty("port").GetInt32();
+                var database = credentials.GetProperty("database").GetString();
+                var username = credentials.GetProperty("username").GetString();
+                var password = credentials.GetProperty("password").GetString();
+
+                Console.WriteLine("Using PostgreSQL database from VCAP_SERVICES");
+                var connString = $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true";
+                return (connString, "postgres");
+            }
         }
         catch (Exception ex)
         {
@@ -80,10 +114,14 @@ static string GetDatabaseConnectionString(IConfiguration configuration)
     }
 
     // Check environment variable first (for Docker Compose), then fall back to configuration
+    // Default to PostgreSQL for local/Docker development
     var connString = Environment.GetEnvironmentVariable("DATABASE_URL")
         ?? configuration.GetConnectionString("DefaultConnection")
         ?? "Host=localhost;Port=5432;Database=demodb;Username=demouser;Password=demopass";
 
-    Console.WriteLine("Using database from configuration/environment");
-    return connString;
+    // Detect database type from connection string
+    var dbType = connString.Contains("Server=") || connString.Contains("server=") ? "mysql" : "postgres";
+
+    Console.WriteLine($"Using {dbType} database from configuration/environment");
+    return (connString, dbType);
 }

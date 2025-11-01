@@ -11,7 +11,7 @@ applications:
       App__Version: "2.0.0"
       App__DeploymentColor: "green"
     services:
-      - my-demo-db
+      - demodb
     health-check-type: http
     health-check-http-endpoint: /health
     timeout: 180

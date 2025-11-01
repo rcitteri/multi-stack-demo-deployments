@@ -1,15 +1,26 @@
 #!/bin/bash
 
-# Create Cloud Foundry PostgreSQL service if it doesn't exist
+# Create Cloud Foundry database service (PostgreSQL or MySQL) if it doesn't exist
+# Usage: ./create-db-service.sh [postgres|mysql]
+#   Default: postgres
 
 set -e
 
 SERVICE_NAME="my-demo-db"
-SERVICE_TYPE="postgres"
+DB_TYPE="${1:-postgres}"  # Default to postgres if no argument provided
 SERVICE_PLAN="small"
 
+# Validate database type
+if [ "$DB_TYPE" != "postgres" ] && [ "$DB_TYPE" != "mysql" ]; then
+    echo "Error: Invalid database type '$DB_TYPE'"
+    echo "Usage: ./create-db-service.sh [postgres|mysql]"
+    exit 1
+fi
+
+SERVICE_TYPE="$DB_TYPE"
+
 echo "======================================"
-echo "Checking for database service..."
+echo "Checking for $DB_TYPE service..."
 echo "======================================"
 
 if cf service "$SERVICE_NAME" > /dev/null 2>&1; then
