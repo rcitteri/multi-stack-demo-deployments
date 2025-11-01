@@ -1,0 +1,18 @@
+---
+applications:
+  - name: nodejs-db-demo-green
+    memory: 512M
+    instances: 1
+    buildpacks:
+      - nodejs_buildpack
+    path: .
+    env:
+      APP_VERSION: "2.0.0"
+      APP_COLOR: "green"
+    services:
+      - my-demo-db
+    health-check-type: http
+    health-check-http-endpoint: /health
+    timeout: 180
+    routes:
+      - route: nodejs-db-demo-green-temp.apps.example.com

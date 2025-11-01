@@ -1,0 +1,27 @@
+{
+  "name": "nodejs-db-demo",
+  "version": "1.0.0",
+  "description": "Node.js PostgreSQL cloud-native demo application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "nodejs",
+    "postgresql",
+    "cloud-native",
+    "cloud-foundry",
+    "express"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  },
+  "engines": {
+    "node": ">=22.x",
+    "npm": ">=10.x"
+  }
+}

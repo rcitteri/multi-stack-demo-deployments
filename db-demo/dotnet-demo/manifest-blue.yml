@@ -1,0 +1,19 @@
+---
+applications:
+  - name: dotnet-db-demo-blue
+    memory: 512M
+    instances: 1
+    buildpacks:
+      - dotnet_core_buildpack
+    path: .
+    env:
+      ASPNETCORE_URLS: http://+:${PORT}
+      App__Version: "1.0.0"
+      App__DeploymentColor: "blue"
+    services:
+      - my-demo-db
+    health-check-type: http
+    health-check-http-endpoint: /health
+    timeout: 180
+    routes:
+      - route: dotnet-db-demo-blue-temp.apps.example.com

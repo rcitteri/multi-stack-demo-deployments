@@ -1,0 +1,17 @@
+---
+applications:
+  - name: nodejs-demo-green
+    memory: 512M
+    instances: 2
+    buildpacks:
+      - nodejs_buildpack
+    path: .
+    env:
+      APP_VERSION: "2.0.0"
+      APP_DEPLOYMENT_COLOR: "green"
+      NODE_ENV: production
+    health-check-type: http
+    health-check-http-endpoint: /health
+    timeout: 180
+    routes:
+      - route: nodejs-demo.apps.internal

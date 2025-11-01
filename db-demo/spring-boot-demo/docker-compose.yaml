@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: demodb
+      POSTGRES_USER: demouser
+      POSTGRES_PASSWORD: demopass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - demo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U demouser -d demodb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@demo.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    networks:
+      - demo-network
+    depends_on:
+      - postgres
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=jdbc:postgresql://postgres:5432/demodb
+      - DATABASE_USER=demouser
+      - DATABASE_PASSWORD=demopass
+      - APP_VERSION=1.0.0
+      - APP_DEPLOYMENT_COLOR=blue
+    networks:
+      - demo-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+networks:
+  demo-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
