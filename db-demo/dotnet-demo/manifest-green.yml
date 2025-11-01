@@ -1,6 +1,6 @@
 ---
 applications:
-  - name: dotnet-db-demo-green
+  - name: msda-dotnet-db-demo-green
     memory: 512M
     instances: 1
     buildpacks:
@@ -16,4 +16,4 @@ applications:
     health-check-http-endpoint: /health
     timeout: 180
     routes:
-      - route: dotnet-db-demo-green-temp.apps.example.com
+      - route: msda-dotnet-db-demo-green.cfapps.io

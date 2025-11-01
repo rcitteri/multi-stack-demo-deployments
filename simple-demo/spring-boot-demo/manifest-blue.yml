@@ -1,6 +1,6 @@
 ---
 applications:
-  - name: spring-boot-demo-blue
+  - name: msda-spring-boot-demo-blue
     memory: 1G
     instances: 2
     buildpacks:
@@ -14,4 +14,4 @@ applications:
     health-check-http-endpoint: /actuator/health
     timeout: 180
     routes:
-      - route: spring-boot-demo.apps.internal
+      - route: msda-spring-boot-demo-blue.cfapps.io

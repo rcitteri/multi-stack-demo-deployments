@@ -1,6 +1,6 @@
 ---
 applications:
-  - name: nodejs-demo-green
+  - name: msda-nodejs-demo-green
     memory: 512M
     instances: 2
     buildpacks:
@@ -14,4 +14,4 @@ applications:
     health-check-http-endpoint: /health
     timeout: 180
     routes:
-      - route: nodejs-demo.apps.internal
+      - route: msda-nodejs-demo-green.cfapps.io

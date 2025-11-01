@@ -1,6 +1,6 @@
 ---
 applications:
-  - name: nodejs-demo-blue
+  - name: msda-nodejs-demo-blue
     memory: 512M
     instances: 2
     buildpacks:
@@ -14,4 +14,4 @@ applications:
     health-check-http-endpoint: /health
     timeout: 180
     routes:
-      - route: nodejs-demo.apps.internal
+      - route: msda-nodejs-demo-blue.cfapps.io

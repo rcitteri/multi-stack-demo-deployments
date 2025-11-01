@@ -1,6 +1,6 @@
 ---
 applications:
-  - name: dotnet-db-demo
+  - name: msda-dotnet-db-demo
     memory: 512M
     instances: 1
     buildpacks:
@@ -15,3 +15,5 @@ applications:
     health-check-type: http
     health-check-http-endpoint: /health
     timeout: 180
+    routes:
+      - route: msda-dotnet-db-demo.cfapps.io

@@ -1,6 +1,6 @@
 ---
 applications:
-  - name: nodejs-db-demo
+  - name: msda-nodejs-db-demo
     memory: 512M
     instances: 1
     buildpacks:
@@ -14,3 +14,5 @@ applications:
     health-check-type: http
     health-check-http-endpoint: /health
     timeout: 180
+    routes:
+      - route: msda-nodejs-db-demo.cfapps.io
