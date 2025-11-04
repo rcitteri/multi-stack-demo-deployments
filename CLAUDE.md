@@ -21,9 +21,9 @@ The project includes two demo applications:
 - **Build Tool**: dotnet CLI
 - **Port**: 8081
 
-### 3. Node.js + React
+### 3. Node.js
 - **Backend**: Node.js with Express
-- **Frontend**: React
+- **Frontend**: React (simple-demo only, loaded from CDN) / Plain HTML+JavaScript (db-demo)
 - **Build Tool**: npm
 - **Port**: 8082
 

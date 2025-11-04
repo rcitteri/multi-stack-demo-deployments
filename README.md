@@ -1,11 +1,11 @@
 # Multi-Stack Demo Applications
 
 ## Overview
-This repository contains demo applications built with different technology stacks to showcase cloud-native development patterns and deployment strategies. The project includes two types of demos, each implemented in three different technology stacks (Spring Boot/Java, .NET Core/C#, Node.js/React).
+This repository contains demo applications built with different technology stacks to showcase cloud-native development patterns and deployment strategies. The project includes two types of demos, each implemented in three different technology stacks (Spring Boot/Java, .NET Core/C#, Node.js).
 
 ## Purpose
 The goal of this demo is to:
-- **Compare Tech Stacks**: See how the same application is implemented in Spring Boot (Java), .NET Core, and Node.js + React
+- **Compare Tech Stacks**: See how the same application is implemented in Spring Boot (Java), .NET Core, and Node.js
 - **Cloud Native Patterns**: Demonstrate containerization, external configuration, stateless and stateful designs
 - **Database Integration**: Show cloud-native database patterns with PostgreSQL and MySQL
 - **Deployment Flexibility**: Show multiple deployment options (local, Docker, Cloud Foundry)
@@ -34,6 +34,7 @@ Basic stateless applications showcasing fundamental cloud-native patterns.
 - **Backend**: Express.js
 - **Frontend**: React
 - **Port**: 8082 (configurable via PORT env var)
+- **Offline Deployment**: Supports Cloud Foundry offline/air-gapped deployments via `npm-packages-offline-cache`
 
 ### DB-Demo (Database-Backed Applications)
 Applications with PostgreSQL database integration demonstrating cloud-native data patterns.
@@ -53,10 +54,10 @@ Applications with PostgreSQL database integration demonstrating cloud-native dat
 - **Port**: 8081 (configurable via PORT env var)
 
 #### 3. Node.js DB Demo (`db-demo/nodejs-demo`)
-- **Backend**: Express.js + pg (node-postgres)
-- **Frontend**: React
-- **Database**: PostgreSQL 17
+- **Backend**: Express.js + pg (node-postgres) + mysql2
+- **Database**: PostgreSQL 17 or MySQL 8 (auto-detected)
 - **Port**: 8082 (configurable via PORT env var)
+- **Offline Deployment**: Supports Cloud Foundry offline/air-gapped deployments via `npm-packages-offline-cache`
 
 ## Features
 
@@ -112,6 +113,9 @@ dotnet run
 cd simple-demo/nodejs-demo
 npm install
 npm start
+
+# Note: For Cloud Foundry offline/air-gapped environments,
+# see "Offline Deployment" section below
 ```
 
 ### DB-Demo: Local Development with Docker Compose
@@ -151,6 +155,13 @@ cd simple-demo/<app-name>
 cf push
 ```
 
+**For Node.js apps in offline/air-gapped Cloud Foundry environments:**
+```bash
+cd simple-demo/nodejs-demo
+./create-offline-cache.sh  # Create npm-packages-offline-cache
+cf push
+```
+
 #### DB-Demo (with Database Service)
 
 **Option 1: PostgreSQL (default)**
@@ -175,6 +186,14 @@ cf push
 
 The db-demo applications automatically detect and bind to either MySQL or PostgreSQL service (`my-demo-db`) in Cloud Foundry via VCAP_SERVICES. The application will configure itself accordingly based on the detected database type.
 
+**For Node.js apps in offline/air-gapped Cloud Foundry environments:**
+```bash
+cd db-demo/nodejs-demo
+./create-offline-cache.sh        # Create npm-packages-offline-cache
+./create-db-service.sh postgres  # Create database service (if needed)
+cf push
+```
+
 ## Configuration
 Each application uses its native configuration format to set:
 - **Version Number**: For blue/green deployment identification
@@ -192,6 +211,52 @@ Configuration files:
 4. Toggle traffic between versions to demonstrate zero-downtime deployment
 5. Use the UUID to track which instance is handling requests
 
+## Offline/Air-Gapped Cloud Foundry Deployment
+
+The **Node.js demos** support deployment to Cloud Foundry environments that **cannot access external npm registries** during buildpack execution (air-gapped or restricted networks).
+
+### Official Cloud Foundry Method: npm-packages-offline-cache
+
+Both Node.js demos use the **official Cloud Foundry offline deployment method** as documented in the [CF Node.js Buildpack documentation](https://docs.cloudfoundry.org/buildpacks/node/index.html#vendoring).
+
+#### How It Works
+1. **Create offline cache**: Run `./create-offline-cache.sh` to create `npm-packages-offline-cache/` directory with all dependencies
+2. **Upload to CF**: The cache, `.yarnrc`, and `yarn.lock` files are uploaded with your app
+3. **Buildpack detection**: CF buildpack detects the offline cache and runs Yarn in offline mode
+4. **No external access needed**: All dependencies are provided from the cache
+
+#### Quick Start
+```bash
+# Simple demo
+cd simple-demo/nodejs-demo
+./create-offline-cache.sh
+cf push
+
+# DB demo
+cd db-demo/nodejs-demo
+./create-offline-cache.sh
+./create-db-service.sh postgres  # if needed
+cf push
+```
+
+#### Files Created
+- `npm-packages-offline-cache/` - Contains all dependencies as .tgz archives
+- `.yarnrc` - Yarn offline configuration
+- `yarn.lock` - Dependency lock file
+
+#### Buildpack Output
+When deploying, you'll see:
+```
+-----> Detected npm-packages-offline-cache directory
+-----> Running yarn in offline mode
+```
+
+### Documentation
+- **Complete Guide**: [`OFFLINE-CACHE-GUIDE.md`](OFFLINE-CACHE-GUIDE.md)
+- **Overview & Comparison**: [`NODEJS-OFFLINE-DEPLOYMENT-README.md`](NODEJS-OFFLINE-DEPLOYMENT-README.md)
+
+---
+
 ## Cloud Native Patterns Demonstrated
 
 ### Simple-Demo Patterns
@@ -201,6 +266,7 @@ Configuration files:
 - ✅ **API-First**: REST endpoints alongside web UI
 - ✅ **Health Monitoring**: Each app exposes health information
 - ✅ **Platform Portability**: Runs on local, Docker, Cloud Foundry
+- ✅ **Offline Deployment** (Node.js): Air-gapped Cloud Foundry support via npm-packages-offline-cache
 
 #### Health Check Endpoints
 All applications provide health check endpoints for monitoring and orchestration:
@@ -220,6 +286,7 @@ All applications provide health check endpoints for monitoring and orchestration
 - ✅ **Service Discovery**: Platform provides database location and credentials
 - ✅ **Database Initialization**: Automatic schema creation on first run
 - ✅ **Docker Compose for Dev**: Local development with PostgreSQL and pgAdmin
+- ✅ **Offline Deployment** (Node.js): Air-gapped Cloud Foundry support with database drivers in offline cache
 
 ## Architecture
 ```
@@ -249,20 +316,27 @@ demo/
 ├── CLAUDE.md (planning document)
 ├── LICENSE (MIT License)
 ├── .gitignore
+├── OFFLINE-CACHE-GUIDE.md (Node.js offline deployment guide)
+├── NODEJS-OFFLINE-DEPLOYMENT-README.md (Overview & comparison)
 ├── assets/ (screenshots)
 ├── simple-demo/
 │   ├── spring-boot-demo/
 │   ├── dotnet-demo/
 │   └── nodejs-demo/
+│       └── create-offline-cache.sh (offline cache creation)
 └── db-demo/
     ├── spring-boot-demo/
     ├── dotnet-demo/
     └── nodejs-demo/
+        └── create-offline-cache.sh (offline cache creation)
 ```
 
 ## Documentation
-- See `CLAUDE.md` for detailed planning and architectural decisions
-- Each application subdirectory contains its own README with specific instructions
+- **Planning & Architecture**: [`CLAUDE.md`](CLAUDE.md) - Detailed planning and architectural decisions
+- **Application-Specific**: Each subdirectory contains its own README with specific instructions
+- **Node.js Offline Deployment**:
+  - [`OFFLINE-CACHE-GUIDE.md`](OFFLINE-CACHE-GUIDE.md) - Complete guide for npm-packages-offline-cache method
+  - [`NODEJS-OFFLINE-DEPLOYMENT-README.md`](NODEJS-OFFLINE-DEPLOYMENT-README.md) - Overview and method comparison
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
