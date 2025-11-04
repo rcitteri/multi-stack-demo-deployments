@@ -1,6 +1,11 @@
 # Dependencies
 node_modules/
 
+# Cloud Foundry offline cache (for air-gapped deployments)
+#npm-packages-offline-cache/
+#.yarnrc
+#yarn.lock
+
 # Logs
 logs
 *.log

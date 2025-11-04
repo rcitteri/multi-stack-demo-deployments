@@ -21,9 +21,9 @@ else
     echo ""
 fi
 
-# Install dependencies
-echo "Installing dependencies..."
-npm install --production
+# Create offline cache for Cloud Foundry (official method)
+echo "Creating npm-packages-offline-cache for air-gapped deployment..."
+./create-offline-cache.sh
 
 echo ""
 echo "Deploying to Cloud Foundry using default manifest..."

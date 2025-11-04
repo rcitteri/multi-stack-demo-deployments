@@ -9,6 +9,9 @@ applications:
     env:
       APP_VERSION: "1.0.0"
       APP_COLOR: "blue"
+      NODE_ENV: production
+      NPM_CONFIG_PRODUCTION: true
+      OPTIMIZE_MEMORY: true
     services:
       - demodb
     health-check-type: http

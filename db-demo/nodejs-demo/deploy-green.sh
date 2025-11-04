@@ -18,8 +18,9 @@ if [ "$CURRENT_VERSION" != "2.0.0" ]; then
     echo ""
 fi
 
-echo "Building application..."
-npm install
+# Create offline cache for Cloud Foundry (official method)
+echo "Creating npm-packages-offline-cache for air-gapped deployment..."
+./create-offline-cache.sh
 echo ""
 
 echo "Pushing to Cloud Foundry..."

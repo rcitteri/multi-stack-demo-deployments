@@ -9,9 +9,9 @@ echo "Deploying Node.js DB Demo"
 echo "======================================"
 echo ""
 
-# Install dependencies
-echo "Installing dependencies..."
-npm install
+# Create offline cache for Cloud Foundry (official method)
+echo "Creating npm-packages-offline-cache for air-gapped deployment..."
+./create-offline-cache.sh
 
 echo ""
 echo "Deploying to Cloud Foundry..."

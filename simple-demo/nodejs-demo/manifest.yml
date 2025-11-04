@@ -10,6 +10,8 @@ applications:
       APP_VERSION: 1.0.0
       APP_DEPLOYMENT_COLOR: blue
       NODE_ENV: production
+      NPM_CONFIG_PRODUCTION: true
+      OPTIMIZE_MEMORY: true
     health-check-type: http
     health-check-http-endpoint: /health
     timeout: 180

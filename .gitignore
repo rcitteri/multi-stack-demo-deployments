@@ -11,8 +11,6 @@
 *.ipr
 
 # JetBrains IDE
-.idea/
-*.iml
 .idea_modules/
 atlassian-ide-plugin.xml
 com_crashlytics_export_strings.xml
@@ -21,7 +19,6 @@ crashlytics-build.properties
 fabric.properties
 
 # VS Code
-.vscode/
 *.code-workspace
 
 # Eclipse
@@ -56,8 +53,6 @@ publish/
 *.exe
 *.pdb
 *.dll.config
-*.cache
-*.log
 project.lock.json
 project.fragment.lock.json
 artifacts/
@@ -86,7 +81,6 @@ lerna-debug.log*
 
 # Docker
 .dockerignore
-*.log
 docker-compose.override.yml
 
 # Database
@@ -96,7 +90,6 @@ docker-compose.override.yml
 postgres_data/
 
 # OS Files
-.DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
@@ -109,7 +102,6 @@ Desktop.ini
 *.bak
 *.tmp
 *.temp
-*~
 .#*
 \#*#
 
@@ -122,15 +114,9 @@ out/
 
 # Logs
 logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-
 # Environment files (keep templates)
 .env
-.env.local
+
 .env.*.local
 !.env.example
 
