@@ -1,0 +1,65 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: chat-mysql
+    command: --default-authentication-plugin=mysql_native_password --bind-address=0.0.0.0
+    ports:
+      - "3306:3306"  # MySQL port for external access (host machine & MySQL Workbench)
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: chatdb
+      MYSQL_USER: chatuser
+      MYSQL_PASSWORD: chatpass
+      MYSQL_ROOT_HOST: "%"  # Allow root connections from any host
+    volumes:
+      - ./vols/mysql-data:/var/lib/mysql
+    networks:
+      - chat-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: chat-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"   # AMQP port for host machine connection
+      - "15672:15672" # Management UI
+    volumes:
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    networks:
+      - chat-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Database Initializer - One-off Admin Process (12-Factor: Factor XII)
+  # Runs once before the main app to initialize database schema
+  db-initializer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chat-db-initializer
+    environment:
+      SPRING_PROFILES_ACTIVE: initializer
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/chatdb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: chatuser
+      SPRING_DATASOURCE_PASSWORD: chatpass
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - chat-network
+    command: ["java", "-jar", "app.jar", "--spring.profiles.active=initializer"]
+    restart: "no"  # Run once and exit
+
+networks:
+  chat-network:
+    driver: bridge

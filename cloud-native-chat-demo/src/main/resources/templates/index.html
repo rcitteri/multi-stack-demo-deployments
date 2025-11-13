@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Native Chat - Join</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="entry-page">
+    <div class="version-badge" th:classappend="${color}">
+        <span th:text="'v' + ${version}">v1.0.0</span>
+    </div>
+
+    <div class="entry-container">
+        <div class="logo">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+        </div>
+
+        <h1>Cloud Native Chat</h1>
+        <p class="subtitle">12-Factor Application Demo</p>
+
+        <form id="nameForm" class="entry-form">
+            <div class="form-group">
+                <label for="username">Enter your name to join</label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    placeholder="Your name..."
+                    required
+                    autocomplete="off"
+                    maxlength="30"
+                    autofocus
+                >
+            </div>
+            <button type="submit" class="btn-primary">Join Chat Room</button>
+        </form>
+
+        <div class="tech-stack">
+            <div class="tech-item">
+                <span class="tech-label">Framework:</span>
+                <span class="tech-value">Spring Boot 3.5.7</span>
+            </div>
+            <div class="tech-item">
+                <span class="tech-label">Language:</span>
+                <span class="tech-value">Java 25</span>
+            </div>
+            <div class="tech-item">
+                <span class="tech-label">Messaging:</span>
+                <span class="tech-value">RabbitMQ</span>
+            </div>
+            <div class="tech-item">
+                <span class="tech-label">Database:</span>
+                <span class="tech-value">MySQL</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('nameForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            if (username) {
+                sessionStorage.setItem('chatUsername', username);
+                window.location.href = '/chat';
+            }
+        });
+    </script>
+</body>
+</html>

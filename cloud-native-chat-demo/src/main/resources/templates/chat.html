@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Native Chat - Room</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="chat-page">
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div class="header-left">
+                <div class="logo-small">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h2>Group Chat</h2>
+                    <p class="instance-id" th:text="'Instance: ' + ${instanceId}">Instance: ...</p>
+                </div>
+            </div>
+            <div class="header-center">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">
+                        <span id="avatarInitial"></span>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-label">Logged in as</span>
+                        <span class="user-name" id="currentUsername"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="version-badge" th:classappend="${color}">
+                    <span th:text="'v' + ${version}">v1.0.0</span>
+                </div>
+                <button id="leaveBtn" class="btn-leave">Leave</button>
+            </div>
+        </div>
+
+        <!-- Messages Area -->
+        <div id="messageArea" class="message-area">
+            <!-- Initial messages from history -->
+            <div th:each="msg : ${recentMessages}"
+                 th:classappend="${msg.type.name() == 'JOIN' ? 'system-message join' : (msg.type.name() == 'LEAVE' ? 'system-message leave' : 'message')}"
+                 th:attr="data-type=${msg.type.name()}">
+                <div th:if="${msg.type.name() == 'CHAT'}" class="message-content">
+                    <div class="message-header">
+                        <span class="message-user" th:text="${msg.username}">Username</span>
+                        <span class="message-time" th:text="${#temporals.format(msg.timestamp, 'HH:mm:ss')}">12:00</span>
+                    </div>
+                    <div class="message-text" th:text="${msg.content}">Message content</div>
+                </div>
+                <div th:if="${msg.type.name() != 'CHAT'}" class="system-text" th:text="${msg.content}">
+                    System message
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <form id="messageForm">
+                <input
+                    type="text"
+                    id="messageInput"
+                    placeholder="Type a message..."
+                    autocomplete="off"
+                    maxlength="500"
+                >
+                <button type="submit" class="btn-send">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <script th:src="@{/js/chat.js}"></script>
+</body>
+</html>
