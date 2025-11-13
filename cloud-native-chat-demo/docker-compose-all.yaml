@@ -2,13 +2,17 @@ services:
   mysql:
     image: mysql:8.0
     container_name: chat-mysql
+    command: --default-authentication-plugin=mysql_native_password --bind-address=0.0.0.0
+    ports:
+      - "3306:3306"  # MySQL port for external access (host machine & MySQL Workbench)
     environment:
       MYSQL_ROOT_PASSWORD: rootpass
       MYSQL_DATABASE: chatdb
       MYSQL_USER: chatuser
       MYSQL_PASSWORD: chatpass
+      MYSQL_ROOT_HOST: "%"  # Allow root connections from any host
     volumes:
-      - mysql-data:/var/lib/mysql
+      - ./.vols/mysql-data:/var/lib/mysql
     networks:
       - chat-network
     healthcheck:
@@ -24,7 +28,10 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     ports:
-      - "15672:15672"  # Management UI
+      - "5672:5672"   # AMQP port for host machine connection
+      - "15672:15672" # Management UI
+    volumes:
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     networks:
       - chat-network
     healthcheck:
@@ -34,14 +41,15 @@ services:
       retries: 5
 
   # Database Initializer - One-off Admin Process (12-Factor: Factor XII)
-  # Runs once before the main app to initialize database schema
+  # Standalone app that runs once before the main app to initialize database schema
   db-initializer:
     build:
       context: .
       dockerfile: Dockerfile
+      target: initializer-runtime  # Use separate initializer build target
+    image: cloud-native-chat-initializer:1.0.0
     container_name: chat-db-initializer
     environment:
-      SPRING_PROFILES_ACTIVE: initializer
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/chatdb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: chatuser
       SPRING_DATASOURCE_PASSWORD: chatpass
@@ -50,13 +58,17 @@ services:
         condition: service_healthy
     networks:
       - chat-network
-    command: ["java", "-jar", "app.jar", "--spring.profiles.active=initializer"]
     restart: "no"  # Run once and exit
+    # Note: No profile parameters needed - this is a standalone app!
 
+  # Main Chat Application
+  # Waits for database initialization to complete before starting
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      target: app-runtime  # Use main app build target
+    image: cloud-native-chat:1.0.0
     container_name: chat-app
     ports:
       - "8080:8080"
@@ -68,18 +80,23 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
+      APP_VERSION: 1.0.0
+      APP_DEPLOYMENT_COLOR: blue
     depends_on:
       mysql:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
       db-initializer:
-        condition: service_completed_successfully
+        condition: service_completed_successfully  # Wait for DB initialization
     networks:
       - chat-network
-
-volumes:
-  mysql-data:
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 60s
+      retries: 3
 
 networks:
   chat-network:

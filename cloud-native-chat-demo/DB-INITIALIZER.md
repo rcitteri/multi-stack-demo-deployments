@@ -6,12 +6,14 @@ The database initializer demonstrates **Factor XII** of the [12-Factor App metho
 
 > **Run admin/management tasks as one-off processes**
 
-This is a separate Spring Boot application that:
+This is a **completely separate Spring Boot application** that:
+- Built as a standalone JAR using Maven profile: `mvn clean package -P initializer`
 - Runs **before** the main application starts
 - Initializes the database schema
 - Seeds initial data if needed
-- Exits upon completion
+- Exits with code 0 on success, non-zero on failure
 - Can be run multiple times safely (idempotent)
+- Runs as a Cloud Foundry task without any parameters
 
 ## Why Separate Initialization?
 
@@ -43,14 +45,30 @@ Application starts → Hibernate auto-creates schema → Application runs
 
 ## How It Works
 
+### Build Process
+
+The project produces **two separate JAR files**:
+
+```bash
+# Build main application
+mvn clean package -DskipTests
+→ target/cloud-native-chat-demo-1.0.0.jar
+
+# Build database initializer (separate app)
+mvn clean package -P initializer -DskipTests
+→ target/cloud-native-chat-initializer-1.0.0.jar
+```
+
 ### Application Architecture
 
 ```
 ┌─────────────────────────────────────┐
-│  DbInitializerApplication.java      │
-│  - Runs with 'initializer' profile  │
+│  cloud-native-chat-initializer.jar  │
+│  - Standalone Spring Boot app       │
+│  - Main: DbInitializerApplication   │
+│  - Excludes RabbitMQ (not needed)   │
 │  - CommandLineRunner executes init  │
-│  - Exits with status code           │
+│  - Exits with status code 0         │
 └─────────────────────────────────────┘
             │
             ▼
@@ -66,8 +84,8 @@ Application starts → Hibernate auto-creates schema → Application runs
 ┌─────────────────────────────────────┐
 │  MySQL Database                     │
 │  - chat_messages table              │
-│  - Sample conversation (11 msgs)   │
-│  - John Doe & Jane Smith           │
+│  - Sample conversation (11 msgs)    │
+│  - John Doe & Jane Smith            │
 └─────────────────────────────────────┘
 ```
 
@@ -84,98 +102,174 @@ Application starts → Hibernate auto-creates schema → Application runs
 
 ## Running the Initializer
 
-### Docker Compose
+### Cloud Foundry (Recommended)
 
-The initializer runs automatically before the main app:
-
-```yaml
-services:
-  db-initializer:
-    # Runs with 'initializer' profile
-    command: ["java", "-jar", "app.jar", "--spring.profiles.active=initializer"]
-    restart: "no"  # Run once and exit
-
-  app:
-    depends_on:
-      db-initializer:
-        condition: service_completed_successfully
-```
-
-**Startup sequence:**
-1. MySQL starts
-2. RabbitMQ starts
-3. **db-initializer runs and exits**
-4. Main app starts
+The initializer runs as a separate application deployed as a Cloud Foundry task:
 
 ```bash
-docker-compose up
+# 1. Build both applications
+mvn clean package -DskipTests
+mvn clean package -P initializer -DskipTests
+
+# 2. Push the initializer app (no-route, won't start automatically)
+cf push cloud-native-chat-initializer -f manifest-initializer.yml
+
+# 3. Run the initializer as a task (no parameters needed!)
+cf run-task cloud-native-chat-initializer "java -jar app.jar" --name db-initializer
+
+# 4. Monitor task progress
+cf tasks cloud-native-chat-initializer
+cf logs cloud-native-chat-initializer --recent
+
+# 5. Once task succeeds, deploy and start main app
+cf push cloud-native-chat -f manifest.yml
 ```
 
-### Cloud Foundry
-
-Run as a one-off task before starting the app:
-
-```bash
-# Deploy application (without starting)
-cf push cloud-native-chat --no-start
-
-# Run database initializer task
-cf run-task cloud-native-chat \
-  "java -jar app.jar --spring.profiles.active=initializer" \
-  --name db-initializer
-
-# Wait for task to complete, then start app
-cf start cloud-native-chat
-```
-
-Or use the deployment script:
+**Or use the automated deployment script:**
 
 ```bash
 ./deploy-cf.sh
 ```
 
-### Manual Execution
+This script handles everything automatically:
+- Builds both JARs
+- Creates CF services
+- Pushes initializer app
+- Runs initializer task and waits for completion
+- Pushes and starts main app
 
-Run locally against a database:
+### Manual Execution (Local Testing)
+
+Run the initializer locally against a database:
 
 ```bash
-# Using Maven
-mvn spring-boot:run -Dspring-boot.run.profiles=initializer
+# Build the initializer JAR
+mvn clean package -P initializer -DskipTests
 
-# Using JAR
-java -jar target/cloud-native-chat-demo-1.0.0.jar \
-  --spring.profiles.active=initializer \
-  --spring.datasource.url=jdbc:mysql://localhost:3306/chatdb \
-  --spring.datasource.username=chatuser \
-  --spring.datasource.password=chatpass
+# Run it directly (no parameters needed!)
+java -jar target/cloud-native-chat-initializer-1.0.0.jar
 ```
+
+The initializer will:
+1. Connect to database using `application.properties` settings
+2. Create schema if needed
+3. Seed data if table is empty
+4. Exit with code 0 on success
+
+### Docker Compose
+
+The initializer runs automatically before the main app using multi-stage Docker builds:
+
+```yaml
+services:
+  mysql:
+    image: mysql:8.0
+    # ... MySQL configuration
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    # ... RabbitMQ configuration
+
+  db-initializer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: initializer-runtime  # Separate build target for initializer
+    image: cloud-native-chat-initializer:1.0.0
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/chatdb?...
+      SPRING_DATASOURCE_USERNAME: chatuser
+      SPRING_DATASOURCE_PASSWORD: chatpass
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: "no"  # Run once and exit
+    # Note: No profile parameters needed!
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app-runtime  # Separate build target for main app
+    image: cloud-native-chat:1.0.0
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      db-initializer:
+        condition: service_completed_successfully  # Waits for initializer
+```
+
+**Startup sequence:**
+1. MySQL starts and becomes healthy
+2. RabbitMQ starts and becomes healthy
+3. **db-initializer builds, runs, and exits with code 0**
+4. Main app builds and starts (only after initializer succeeds)
+
+```bash
+docker-compose up --build
+```
+
+The `--build` flag ensures both applications are built with the latest code.
 
 ## Configuration
 
-### Profile: `initializer`
+### Maven Build Configuration
 
-File: `src/main/resources/application-initializer.properties`
+The initializer is built using a separate Maven profile in `pom.xml`:
+
+```xml
+<profiles>
+    <profile>
+        <id>initializer</id>
+        <build>
+            <finalName>cloud-native-chat-initializer-${project.version}</finalName>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <configuration>
+                        <mainClass>com.example.chat.DbInitializerApplication</mainClass>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </build>
+    </profile>
+</profiles>
+```
+
+Build commands:
+```bash
+# Main app JAR
+mvn clean package -DskipTests
+→ target/cloud-native-chat-demo-1.0.0.jar
+
+# Initializer JAR
+mvn clean package -P initializer -DskipTests
+→ target/cloud-native-chat-initializer-1.0.0.jar
+```
+
+### Application Configuration
+
+Both applications use `src/main/resources/application.properties`:
 
 ```properties
-# Disable web server (CLI-only)
-spring.main.web-application-type=none
-
-# Disable Hibernate auto-DDL (we manage it manually)
-spring.jpa.hibernate.ddl-auto=none
-
-# Database connection (same as main app)
+# Database connection
 spring.datasource.url=jdbc:mysql://localhost:3306/chatdb
 spring.datasource.username=chatuser
 spring.datasource.password=chatpass
+
+# Schema managed by database initializer (not Hibernate)
+spring.jpa.hibernate.ddl-auto=none
 ```
 
-### Main App Configuration
-
-File: `src/main/resources/application.properties`
-
-```properties
-# Schema managed by database initializer
-spring.jpa.hibernate.ddl-auto=none
+The initializer **excludes RabbitMQ** at the code level:
+```java
+@SpringBootApplication(exclude = {RabbitAutoConfiguration.class})
+public class DbInitializerApplication { ... }
 ```
 
 ## Idempotency

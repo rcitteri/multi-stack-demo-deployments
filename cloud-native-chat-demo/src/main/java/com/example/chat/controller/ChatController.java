@@ -49,6 +49,7 @@ public class ChatController {
         message.setType(ChatMessage.MessageType.JOIN);
         message.setContent(username + " joined the chat");
         message.setTimestamp(LocalDateTime.now());
+
         chatService.sendMessage(message);
     }
 
@@ -67,6 +68,7 @@ public class ChatController {
         message.setType(ChatMessage.MessageType.LEAVE);
         message.setContent(username + " left the chat");
         message.setTimestamp(LocalDateTime.now());
+
         chatService.sendMessage(message);
     }
 }

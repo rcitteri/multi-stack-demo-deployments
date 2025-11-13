@@ -12,7 +12,7 @@ services:
       MYSQL_PASSWORD: chatpass
       MYSQL_ROOT_HOST: "%"  # Allow root connections from any host
     volumes:
-      - ./vols/mysql-data:/var/lib/mysql
+      - ./.vols/mysql-data:/var/lib/mysql
     networks:
       - chat-network
     healthcheck:
@@ -41,14 +41,15 @@ services:
       retries: 5
 
   # Database Initializer - One-off Admin Process (12-Factor: Factor XII)
-  # Runs once before the main app to initialize database schema
+  # Standalone app that runs once before the main app to initialize database schema
   db-initializer:
     build:
       context: .
       dockerfile: Dockerfile
+      target: initializer-runtime  # Use separate initializer build target
+    image: cloud-native-chat-initializer:1.0.0
     container_name: chat-db-initializer
     environment:
-      SPRING_PROFILES_ACTIVE: initializer
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/chatdb?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: chatuser
       SPRING_DATASOURCE_PASSWORD: chatpass
@@ -57,8 +58,9 @@ services:
         condition: service_healthy
     networks:
       - chat-network
-    command: ["java", "-jar", "app.jar", "--spring.profiles.active=initializer"]
     restart: "no"  # Run once and exit
+    # Note: No profile parameters needed - this is a standalone app!
+
 
 networks:
   chat-network:

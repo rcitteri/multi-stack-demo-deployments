@@ -84,20 +84,24 @@ The `java-cfenv-boot` library provides **zero-configuration** Cloud Foundry supp
 ### Option 1: Automated Deployment (Recommended)
 
 ```bash
-# Build the application
-mvn clean package
-
-# Run the deployment script (handles everything)
+# Run the deployment script (handles everything including build)
 ./deploy-cf.sh
 ```
 
 **What the script does:**
-1. ✓ Creates MySQL service (`demodb`)
-2. ✓ Creates RabbitMQ service (`chatqueue`)
-3. ✓ Pushes application (without starting)
-4. ✓ Binds services
-5. ✓ Runs database initializer task
-6. ✓ Starts application
+1. ✓ Builds both applications (main app and database initializer)
+2. ✓ Creates MySQL service (`demodb`)
+3. ✓ Creates RabbitMQ service (`chatqueue`)
+4. ✓ Pushes database initializer app (no-route)
+5. ✓ Runs database initializer as a task (`cf run-task`)
+6. ✓ Waits for initializer to complete successfully
+7. ✓ Pushes and starts main application
+
+**Benefits of this approach:**
+- Database initializer is a **completely separate application**
+- No profile parameters needed
+- Simple task command: `java -jar app.jar`
+- Exits with code 0 on success
 
 ### Option 2: Manual Deployment
 
@@ -107,7 +111,21 @@ mvn clean package
 cf login -a https://api.your-cf-domain.com
 ```
 
-#### Step 2: Create Services
+#### Step 2: Build Both Applications
+
+```bash
+# Build main application
+mvn clean package -DskipTests
+
+# Build database initializer (separate app)
+mvn clean package -P initializer -DskipTests
+```
+
+This produces two JAR files:
+- `target/cloud-native-chat-demo-1.0.0.jar` (main app)
+- `target/cloud-native-chat-initializer-1.0.0.jar` (initializer)
+
+#### Step 3: Create Services
 
 ```bash
 # Create services if they don't exist
@@ -118,33 +136,35 @@ cf create-service p.mysql small demodb
 cf create-service rabbitmq small chatqueue
 ```
 
-#### Step 3: Push Application
+#### Step 4: Push Database Initializer
 
 ```bash
-# Push without starting
-cf push cloud-native-chat -f manifest.yml --no-start
+# Push initializer app (no-route, won't start automatically)
+cf push cloud-native-chat-initializer -f manifest-initializer.yml
 ```
 
-#### Step 4: Run Database Initializer Task
+#### Step 5: Run Database Initializer Task
 
-**Important:** Run the database initializer BEFORE starting the app:
+**Important:** Run the database initializer BEFORE starting the main app:
 
 ```bash
-cf run-task cloud-native-chat \
-  "java -jar app.jar --spring.profiles.active=initializer" \
-  --name db-initializer
+# Run the initializer (no parameters needed!)
+cf run-task cloud-native-chat-initializer "java -jar app.jar" --name db-initializer
 
-# Wait for task to complete
-cf tasks cloud-native-chat
+# Monitor task progress
+cf tasks cloud-native-chat-initializer
 
 # Check logs
-cf logs cloud-native-chat --recent | grep db-initializer
+cf logs cloud-native-chat-initializer --recent
 ```
 
-#### Step 5: Start Application
+Wait for the task to show status `SUCCEEDED` before continuing.
+
+#### Step 6: Push and Start Main Application
 
 ```bash
-cf start cloud-native-chat
+# Push main app (will start automatically)
+cf push cloud-native-chat -f manifest.yml
 ```
 
 ## How Services Are Bound

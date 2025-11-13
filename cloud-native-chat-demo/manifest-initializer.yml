@@ -1,0 +1,15 @@
+---
+applications:
+  - name: cloud-native-chat-initializer
+    memory: 512M
+    instances: 1
+    buildpacks:
+      - java_buildpack_offline
+    path: target/cloud-native-chat-initializer-1.0.0.jar
+    no-route: true
+    health-check-type: process
+    services:
+      - demodb
+    env:
+      # JPA configuration for database initialization
+      SPRING_JPA_HIBERNATE_DDL_AUTO: "none"
