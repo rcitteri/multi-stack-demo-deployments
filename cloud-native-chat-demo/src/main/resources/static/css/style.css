@@ -319,6 +319,38 @@ body {
     color: white;
 }
 
+/* Connection Status Indicator */
+.connection-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    padding: 6px;
+    border-radius: 6px;
+    cursor: help;
+    transition: all 0.3s ease;
+}
+
+.connection-status.websocket {
+    color: var(--accent-green);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.connection-status.polling {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
 /* Message Area */
 .message-area {
     flex: 1;

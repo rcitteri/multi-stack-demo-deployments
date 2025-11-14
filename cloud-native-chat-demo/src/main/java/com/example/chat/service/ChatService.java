@@ -59,6 +59,16 @@ public class ChatService {
     }
 
     /**
+     * Get messages since a specific timestamp (for polling fallback)
+     */
+    public List<ChatMessageDTO> getMessagesSince(LocalDateTime since) {
+        return chatMessageRepository.findMessagesSince(since)
+            .stream()
+            .map(ChatMessageDTO::fromEntity)
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Get count of chat messages in the last 24 hours
      */
     public long getChatMessageCount() {

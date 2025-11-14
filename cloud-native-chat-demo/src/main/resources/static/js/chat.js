@@ -1,5 +1,8 @@
 let stompClient = null;
 let username = null;
+let usingPolling = false;
+let pollingInterval = null;
+let lastMessageTime = null;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -63,6 +66,8 @@ function connect() {
 
 function onConnected() {
     console.log('WebSocket connected');
+    usingPolling = false;
+    updateConnectionStatus();
 
     // Subscribe to the message topic
     stompClient.subscribe('/topic/messages', onMessageReceived);
@@ -78,7 +83,14 @@ function onConnected() {
 
 function onError(error) {
     console.error('WebSocket connection error:', error);
-    showSystemMessage('Connection error. Please refresh the page.', 'error');
+    console.log('Falling back to polling mode...');
+
+    // Switch to polling mode
+    usingPolling = true;
+    updateConnectionStatus();
+    startPolling();
+
+    showSystemMessage('Using polling mode (WebSocket unavailable)', 'info');
 }
 
 function sendMessage(event) {
@@ -87,7 +99,35 @@ function sendMessage(event) {
     const messageInput = document.getElementById('messageInput');
     const messageContent = messageInput.value.trim();
 
-    if (messageContent && stompClient) {
+    if (!messageContent) return;
+
+    if (usingPolling) {
+        // Send via REST API in polling mode
+        const chatMessage = {
+            username: username,
+            content: messageContent,
+            type: 'CHAT'
+        };
+
+        fetch('/api/chat/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(chatMessage)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to send message');
+            }
+            messageInput.value = '';
+        })
+        .catch(error => {
+            console.error('Error sending message:', error);
+            showSystemMessage('Failed to send message', 'error');
+        });
+    } else if (stompClient) {
+        // Send via WebSocket
         const chatMessage = {
             username: username,
             content: messageContent,
@@ -153,8 +193,73 @@ function showSystemMessage(text, type = 'info') {
     messageArea.scrollTop = messageArea.scrollHeight;
 }
 
+function startPolling() {
+    // Initialize with current time minus a few seconds to catch recent messages
+    if (!lastMessageTime) {
+        lastMessageTime = new Date(Date.now() - 10000).toISOString();
+    }
+
+    // Poll immediately
+    pollMessages();
+
+    // Set up polling interval (every 5 seconds)
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+    }
+    pollingInterval = setInterval(pollMessages, 5000);
+}
+
+function stopPolling() {
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+    }
+}
+
+function pollMessages() {
+    const since = lastMessageTime || new Date(Date.now() - 60000).toISOString();
+
+    fetch(`/api/messages/poll?since=${encodeURIComponent(since)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Polling failed');
+            }
+            return response.json();
+        })
+        .then(messages => {
+            messages.forEach(message => {
+                displayMessage(message);
+                // Update last message time
+                if (message.timestamp) {
+                    lastMessageTime = message.timestamp;
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Polling error:', error);
+        });
+}
+
+function updateConnectionStatus() {
+    const statusElement = document.getElementById('connectionStatus');
+    if (!statusElement) return;
+
+    if (usingPolling) {
+        statusElement.innerHTML = '⟳';
+        statusElement.title = 'Using polling mode (5s interval)';
+        statusElement.className = 'connection-status polling';
+    } else {
+        statusElement.innerHTML = '⚡';
+        statusElement.title = 'WebSocket connected';
+        statusElement.className = 'connection-status websocket';
+    }
+}
+
 function leaveChat() {
-    if (stompClient && username) {
+    // Stop polling if active
+    stopPolling();
+
+    if (stompClient && username && !usingPolling) {
         const leaveMessage = {
             username: username,
             type: 'LEAVE'

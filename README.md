@@ -63,7 +63,62 @@ Applications with PostgreSQL database integration demonstrating cloud-native dat
 - **Port**: 8082 (configurable via PORT env var)
 - **Offline Deployment**: Supports Cloud Foundry offline/air-gapped deployments via `npm-packages-offline-cache`
 
-## Features
+
+### Cloud Native Chat Demo
+
+[Cloud Native Demo Documentation](cloud-native-chat-demo/README.md)
+
+A **12-Factor cloud-native application** demonstrating modern Spring Boot development patterns with real-time chat functionality.
+
+### User Experience
+
+<table>
+<tr>
+<td width="50%">
+<strong>Login Page</strong><br/>
+Users enter their name to join the chat room
+<br/><br/>
+<img src="cloud-native-chat-demo/assets/screen-01.png" alt="Login Page" width="100%"/>
+</td>
+<td width="50%">
+<strong>Chat Interface</strong><br/>
+Real-time messaging with a clean, dark-themed UI
+<br/><br/>
+<img src="cloud-native-chat-demo/assets/screen-02.png" alt="Chat View" width="100%"/>
+</td>
+</tr>
+</table>
+
+**Features:**
+- ✅ Real-time message delivery across all connected users
+- ✅ Persistent chat history (messages stored in MySQL)
+- ✅ System notifications for user join/leave events
+- ✅ Support for multiple simultaneous chat sessions
+- ✅ Horizontal scaling with RabbitMQ message distribution
+
+
+
+### Overview
+
+This application showcases all 12 factors for building cloud-native applications that are:
+- **Portable** across execution environments
+- **Scalable** horizontally
+- **Resilient** to failures
+- **Observable** through metrics and health checks
+
+### Key Features
+
+- Real-time group chat using **WebSocket** and **RabbitMQ**
+- Message persistence with **MySQL** (24-hour retention)
+- Beautiful dark-themed UI built with **Thymeleaf**
+- Custom **Spring Boot Actuator** endpoints for monitoring
+- Horizontally scalable architecture
+- Cloud Foundry ready with service binding support
+
+
+---
+
+## Features Simple & DB Demo
 
 ### Simple-Demo Features
 
