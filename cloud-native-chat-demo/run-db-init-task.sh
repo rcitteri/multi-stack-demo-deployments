@@ -24,7 +24,7 @@ fi
 echo "Running task: java -jar app.jar"
 echo ""
 
-TASK_OUTPUT=$(cf run-task "$INITIALIZER_NAME" --command "java -jar app.jar" --name db-initializer)
+TASK_OUTPUT=$(cf run-task "$INITIALIZER_NAME" --command 'JAVA_OPTS="-agentpath:$PWD/.java-buildpack/open_jdk_jre/bin/jvmkill-1.17.0_RELEASE=printHeapHistogram=1 -Djava.io.tmpdir=$TMPDIR -Djava.ext.dirs=  -Djava.security.properties=$PWD/.java-buildpack/java_security/java.security $JAVA_OPTS" && CALCULATED_MEMORY=$($PWD/.java-buildpack/open_jdk_jre/bin/java-buildpack-memory-calculator-3.13.0_RELEASE -totMemory=$MEMORY_LIMIT -loadedClasses=27736 -poolType=metaspace -stackThreads=250 -vmOptions="$JAVA_OPTS") && echo JVM Memory Configuration: $CALCULATED_MEMORY && JAVA_OPTS="$JAVA_OPTS $CALCULATED_MEMORY" && MALLOC_ARENA_MAX=2 SERVER_PORT=$PORT eval exec $PWD/.java-buildpack/open_jdk_jre/bin/java $JAVA_OPTS -cp $PWD/.:$PWD/.java-buildpack/container_security_provider/container_security_provider-1.20.0_RELEASE.jar org.springframework.boot.loader.launch.JarLauncher')
 TASK_ID=$(echo "$TASK_OUTPUT" | grep "task id:" | awk '{print $3}')
 
 echo "✓ Task started with ID: $TASK_ID"

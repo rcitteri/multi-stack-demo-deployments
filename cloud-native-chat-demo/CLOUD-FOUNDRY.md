@@ -98,9 +98,10 @@ The `java-cfenv-boot` library provides **zero-configuration** Cloud Foundry supp
 7. ✓ Pushes and starts main application
 
 **Benefits of this approach:**
-- Database initializer is a **completely separate application**
+- Database initializer is a **completely separate Spring Boot application** in `initializer/` folder
+- Separate `pom.xml` with minimal dependencies
 - No profile parameters needed
-- Simple task command: `java -jar app.jar`
+- Task command uses full buildpack configuration
 - Exits with code 0 on success
 
 ### Option 2: Manual Deployment
@@ -114,16 +115,22 @@ cf login -a https://api.your-cf-domain.com
 #### Step 2: Build Both Applications
 
 ```bash
-# Build main application
+# Build main application (from root)
 mvn clean package -DskipTests
 
-# Build database initializer (separate app)
-mvn clean package -P initializer -DskipTests
+# Build database initializer (separate project in initializer/ folder)
+cd initializer
+mvn clean package -DskipTests
+cd ..
+
+# Copy initializer JAR to target/ for CF push
+cp initializer/target/cloud-native-chat-initializer-1.0.0.jar target/
 ```
 
 This produces two JAR files:
 - `target/cloud-native-chat-demo-1.0.0.jar` (main app)
-- `target/cloud-native-chat-initializer-1.0.0.jar` (initializer)
+- `initializer/target/cloud-native-chat-initializer-1.0.0.jar` (initializer)
+- `target/cloud-native-chat-initializer-1.0.0.jar` (copy for CF push)
 
 #### Step 3: Create Services
 
@@ -148,8 +155,11 @@ cf push cloud-native-chat-initializer -f manifest-initializer.yml
 **Important:** Run the database initializer BEFORE starting the main app:
 
 ```bash
-# Run the initializer (no parameters needed!)
-cf run-task cloud-native-chat-initializer "java -jar app.jar" --name db-initializer
+# Run the initializer with full buildpack command
+# This ensures proper JVM configuration and memory management
+cf run-task cloud-native-chat-initializer \
+  --command '<full-buildpack-launch-command>' \
+  --name db-initializer
 
 # Monitor task progress
 cf tasks cloud-native-chat-initializer
@@ -157,6 +167,8 @@ cf tasks cloud-native-chat-initializer
 # Check logs
 cf logs cloud-native-chat-initializer --recent
 ```
+
+**Note**: The full buildpack command is defined in `deploy-cf.sh` (line 58). It includes JVM memory calculator, jvmkill agent, and proper classpath configuration.
 
 Wait for the task to show status `SUCCEEDED` before continuing.
 

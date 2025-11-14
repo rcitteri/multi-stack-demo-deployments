@@ -7,6 +7,7 @@ applications:
       - java_buildpack_offline
     path: target/cloud-native-chat-demo-1.0.0.jar
     env:
+      JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 21.+ } }'
       APP_VERSION: "1.0.0"
       APP_DEPLOYMENT_COLOR: "blue"
       SPRING_PROFILES_ACTIVE: "default"
@@ -19,4 +20,4 @@ applications:
     health-check-http-endpoint: /actuator/health
     timeout: 180
     routes:
-      - route: claud-native-chat.dhaka.cf-app.com
+      - route: cloud-native-chat.apps.dhaka.cf-app.com

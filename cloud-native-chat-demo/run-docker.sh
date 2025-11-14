@@ -8,7 +8,7 @@ echo ""
 
 # Start services
 echo "Starting MySQL, RabbitMQ, and application..."
-docker-compose up -d
+docker compose -f docker-compose-all.yaml up -d
 
 echo ""
 echo "======================================"

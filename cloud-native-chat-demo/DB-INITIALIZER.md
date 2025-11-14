@@ -6,8 +6,9 @@ The database initializer demonstrates **Factor XII** of the [12-Factor App metho
 
 > **Run admin/management tasks as one-off processes**
 
-This is a **completely separate Spring Boot application** that:
-- Built as a standalone JAR using Maven profile: `mvn clean package -P initializer`
+This is a **completely separate Spring Boot application** in the `initializer/` folder that:
+- Built independently: `cd initializer && mvn clean package -DskipTests`
+- Has its own `pom.xml` with minimal dependencies (Spring Boot, JDBC, MySQL, java-cfenv-boot)
 - Runs **before** the main application starts
 - Initializes the database schema
 - Seeds initial data if needed
@@ -47,17 +48,21 @@ Application starts → Hibernate auto-creates schema → Application runs
 
 ### Build Process
 
-The project produces **two separate JAR files**:
+The project contains **two completely independent Spring Boot applications**:
 
 ```bash
-# Build main application
+# Build main application (from root)
 mvn clean package -DskipTests
 → target/cloud-native-chat-demo-1.0.0.jar
 
-# Build database initializer (separate app)
-mvn clean package -P initializer -DskipTests
-→ target/cloud-native-chat-initializer-1.0.0.jar
+# Build database initializer (separate project in initializer/ folder)
+cd initializer
+mvn clean package -DskipTests
+cd ..
+→ initializer/target/cloud-native-chat-initializer-1.0.0.jar
 ```
+
+**Key Point**: These are two independent applications with separate `pom.xml` files, not Maven profiles.
 
 ### Application Architecture
 
@@ -65,8 +70,9 @@ mvn clean package -P initializer -DskipTests
 ┌─────────────────────────────────────┐
 │  cloud-native-chat-initializer.jar  │
 │  - Standalone Spring Boot app       │
+│  - Location: initializer/ folder    │
 │  - Main: DbInitializerApplication   │
-│  - Excludes RabbitMQ (not needed)   │
+│  - Minimal dependencies (no web)    │
 │  - CommandLineRunner executes init  │
 │  - Exits with status code 0         │
 └─────────────────────────────────────┘
@@ -109,13 +115,15 @@ The initializer runs as a separate application deployed as a Cloud Foundry task:
 ```bash
 # 1. Build both applications
 mvn clean package -DskipTests
-mvn clean package -P initializer -DskipTests
+cd initializer && mvn clean package -DskipTests && cd ..
+# Copy initializer JAR to target/ for CF push
+cp initializer/target/cloud-native-chat-initializer-1.0.0.jar target/
 
 # 2. Push the initializer app (no-route, won't start automatically)
 cf push cloud-native-chat-initializer -f manifest-initializer.yml
 
-# 3. Run the initializer as a task (no parameters needed!)
-cf run-task cloud-native-chat-initializer "java -jar app.jar" --name db-initializer
+# 3. Run the initializer as a task using full buildpack command
+cf run-task cloud-native-chat-initializer --command '<full-buildpack-command>' --name db-initializer
 
 # 4. Monitor task progress
 cf tasks cloud-native-chat-initializer
@@ -144,14 +152,15 @@ Run the initializer locally against a database:
 
 ```bash
 # Build the initializer JAR
-mvn clean package -P initializer -DskipTests
+cd initializer
+mvn clean package -DskipTests
 
 # Run it directly (no parameters needed!)
 java -jar target/cloud-native-chat-initializer-1.0.0.jar
 ```
 
 The initializer will:
-1. Connect to database using `application.properties` settings
+1. Connect to database using `initializer/src/main/resources/application.properties` settings
 2. Create schema if needed
 3. Seed data if table is empty
 4. Exit with code 0 on success
@@ -219,43 +228,73 @@ The `--build` flag ensures both applications are built with the latest code.
 
 ### Maven Build Configuration
 
-The initializer is built using a separate Maven profile in `pom.xml`:
+The initializer is a **completely separate Spring Boot project** with its own `pom.xml`:
+
+**Location**: `initializer/pom.xml`
 
 ```xml
-<profiles>
-    <profile>
-        <id>initializer</id>
-        <build>
-            <finalName>cloud-native-chat-initializer-${project.version}</finalName>
-            <plugins>
-                <plugin>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-maven-plugin</artifactId>
-                    <configuration>
-                        <mainClass>com.example.chat.DbInitializerApplication</mainClass>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </build>
-    </profile>
-</profiles>
+<project>
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.7</version>
+    </parent>
+
+    <groupId>com.example</groupId>
+    <artifactId>cloud-native-chat-initializer</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <java.version>21</java.version>
+    </properties>
+
+    <dependencies>
+        <!-- Minimal dependencies: Spring Boot starter, JDBC, MySQL, java-cfenv-boot -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.pivotal.cfenv</groupId>
+            <artifactId>java-cfenv-boot</artifactId>
+            <version>3.5.0</version>
+        </dependency>
+    </dependencies>
+</project>
 ```
 
 Build commands:
 ```bash
-# Main app JAR
+# Main app JAR (from root)
 mvn clean package -DskipTests
 → target/cloud-native-chat-demo-1.0.0.jar
 
-# Initializer JAR
-mvn clean package -P initializer -DskipTests
+# Initializer JAR (from initializer/ folder)
+cd initializer
+mvn clean package -DskipTests
 → target/cloud-native-chat-initializer-1.0.0.jar
 ```
 
+**Key Differences**:
+- Separate `pom.xml` files for each application
+- Initializer has minimal dependencies (no Web, WebSocket, RabbitMQ, etc.)
+- Each builds independently in its own directory
+
 ### Application Configuration
 
-Both applications use `src/main/resources/application.properties`:
+Each application has its own configuration file:
 
+**Main App**: `src/main/resources/application.properties`
 ```properties
 # Database connection
 spring.datasource.url=jdbc:mysql://localhost:3306/chatdb
@@ -264,13 +303,24 @@ spring.datasource.password=chatpass
 
 # Schema managed by database initializer (not Hibernate)
 spring.jpa.hibernate.ddl-auto=none
+
+# RabbitMQ configuration
+spring.rabbitmq.host=localhost
+spring.rabbitmq.port=5672
 ```
 
-The initializer **excludes RabbitMQ** at the code level:
-```java
-@SpringBootApplication(exclude = {RabbitAutoConfiguration.class})
-public class DbInitializerApplication { ... }
+**Initializer App**: `initializer/src/main/resources/application.properties`
+```properties
+# Database connection only
+spring.datasource.url=jdbc:mysql://localhost:3306/chatdb
+spring.datasource.username=chatuser
+spring.datasource.password=chatpass
+
+# No JPA configuration needed (uses plain JDBC)
+# No RabbitMQ configuration (no dependency)
 ```
+
+**Key Point**: The initializer is a minimal Spring Boot app with **no RabbitMQ dependencies** in its `pom.xml`, so no exclusions are needed at the code level.
 
 ## Idempotency
 
@@ -305,11 +355,13 @@ cf tasks cloud-native-chat
 # Run the db-initializer task
 ./run-db-init-task.sh
 
-# Or manually:
-cf run-task cloud-native-chat \
-  "java -jar app.jar --spring.profiles.active=initializer" \
+# Or manually with full buildpack command (see deploy-cf.sh for complete command):
+cf run-task cloud-native-chat-initializer \
+  --command '<full-buildpack-launch-command>' \
   --name db-initializer
 ```
+
+**Note**: The task command uses the full Cloud Foundry buildpack launch command (not just `java -jar`) to ensure proper JVM configuration. See `deploy-cf.sh` line 58 for the complete command.
 
 ### View Task Logs
 
@@ -372,7 +424,9 @@ docker run -d --name mysql-test \
   -p 3306:3306 mysql:8.0
 
 # Run initializer
-mvn spring-boot:run -Dspring-boot.run.profiles=initializer
+cd initializer
+mvn spring-boot:run
+cd ..
 
 # Verify tables
 docker exec -it mysql-test mysql -uchatuser -pchatpass chatdb \

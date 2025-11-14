@@ -4,7 +4,7 @@ Get the Cloud Native Chat application running in **5 minutes**!
 
 ## Prerequisites
 
-- Java 25
+- Java 21
 - Maven
 - Docker Desktop
 

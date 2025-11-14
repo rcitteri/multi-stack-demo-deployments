@@ -31,7 +31,7 @@ This guide explains how to run the main Spring Boot application **on your local 
 
 ## Prerequisites
 
-1. **Java 25** installed
+1. **Java 21** installed
 2. **Maven** installed
 3. **Docker & Docker Compose** installed
 4. Application built: `mvn clean package`
@@ -75,7 +75,9 @@ Database initialization completed successfully
 ### Option B: Run from Host Machine
 
 ```bash
-mvn spring-boot:run -Dspring-boot.run.profiles=initializer
+cd initializer
+mvn spring-boot:run
+cd ..
 ```
 
 ## Step 3: Test Connectivity

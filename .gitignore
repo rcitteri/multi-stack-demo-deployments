@@ -10,6 +10,7 @@
 *.iws
 *.ipr
 
+.vols/
 # JetBrains IDE
 .idea_modules/
 atlassian-ide-plugin.xml
@@ -146,3 +147,6 @@ __pycache__/
 
 # Presentation
 presentation/
+
+CLAUDE.md
+/cloud-native-chat-demo/.vols/

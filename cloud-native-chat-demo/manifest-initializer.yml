@@ -1,7 +1,7 @@
 ---
 applications:
   - name: cloud-native-chat-initializer
-    memory: 512M
+    memory: 1G
     instances: 1
     buildpacks:
       - java_buildpack_offline
@@ -11,5 +11,6 @@ applications:
     services:
       - demodb
     env:
+      JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 21.+ } }'
       # JPA configuration for database initialization
       SPRING_JPA_HIBERNATE_DDL_AUTO: "none"
