@@ -1,6 +1,6 @@
 ---
 applications:
-  - name: msda-spring-boot-demo-green
+  - name: spring-boot-demo-green
     memory: 1G
     instances: 2
     buildpacks:
@@ -14,4 +14,4 @@ applications:
     health-check-http-endpoint: /actuator/health
     timeout: 180
     routes:
-      - route: msda-spring-boot-demo-green.apps.dhaka.cf-app.com
+      - route: spring-boot-demo-green.apps.tpcf.tnz-field-epc.lvn.broadcom.net
