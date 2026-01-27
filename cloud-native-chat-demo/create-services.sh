@@ -13,7 +13,7 @@ if cf service "$MYSQL_SERVICE_NAME" > /dev/null 2>&1; then
     echo "✓ MySQL service '$MYSQL_SERVICE_NAME' already exists"
 else
     echo "Creating MySQL service..."
-    cf create-service p.mysql small "$MYSQL_SERVICE_NAME"
+    cf create-service p.mysql db-small "$MYSQL_SERVICE_NAME"
     echo "Waiting for MySQL service to be ready..."
     while true; do
         STATUS=$(cf service "$MYSQL_SERVICE_NAME" | grep "status:" | awk '{print $2}')
