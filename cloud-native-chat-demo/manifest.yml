@@ -15,9 +15,9 @@ applications:
       SPRING_JPA_HIBERNATE_DDL_AUTO: "none"
     services:
       - chatqueue
-      - demodb
+      - postgres-db
     health-check-type: http
     health-check-http-endpoint: /actuator/health
     timeout: 180
     routes:
-      - route: cloud-native-chat.apps.dhaka.cf-app.com
+      - route: cloud-native-chat.apps.tpcf.tnz-field-epc.lvn.broadcom.net
