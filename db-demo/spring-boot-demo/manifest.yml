@@ -16,4 +16,4 @@ applications:
     health-check-http-endpoint: /actuator/health
     timeout: 180
     routes:
-      - route: msda-spring-boot-db-demo.apps.dhaka.cf-app.com
+      - route: msda-spring-boot-db-demo.apps.tpcf.tnz-field-epc.lvn.broadcom.net
