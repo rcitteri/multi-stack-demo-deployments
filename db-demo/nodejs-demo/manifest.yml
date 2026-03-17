@@ -18,4 +18,4 @@ applications:
     health-check-http-endpoint: /health
     timeout: 180
     routes:
-      - route: msda-nodejs-db-demo.apps.dhaka.cf-app.com
+      - route: msda-nodejs-db-demo.apps.tpcf.tnz-field-epc.lvn.broadcom.net
