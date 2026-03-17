@@ -14,4 +14,4 @@ applications:
     health-check-http-endpoint: /health
     timeout: 180
     routes:
-      - route: msda-dotnet-demo.apps.dhaka.cf-app.com
+      - route: msda-dotnet-demo.apps.apps.tpcf.tnz-field-epc.lvn.broadcom.net
