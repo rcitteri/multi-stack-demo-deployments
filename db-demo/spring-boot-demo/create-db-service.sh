@@ -8,7 +8,7 @@ set -e
 
 SERVICE_NAME="my-demo-db"
 DB_TYPE="${1:-postgres}"  # Default to postgres if no argument provided
-SERVICE_PLAN="small"
+SERVICE_PLAN="on-demand-postgres-db"
 
 # Validate database type
 if [ "$DB_TYPE" != "postgres" ] && [ "$DB_TYPE" != "mysql" ]; then
