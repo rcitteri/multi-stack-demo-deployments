@@ -2,7 +2,7 @@
 applications:
   - name: spring-boot-demo-green
     memory: 1G
-    instances: 1
+    instances: 2
     buildpacks:
       - java_buildpack_offline
     path: target/spring-boot-demo-1.0.0.jar
